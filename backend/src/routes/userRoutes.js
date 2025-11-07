@@ -1,0 +1,25 @@
+import express from "express";
+import { deleteUser, forgotPassword, getSingleUser, getUserDetails, getUserList, loginUser, logoutUser, registerUser, resetPassword, updatePassword, updateUserRole } from "../controller/userController.js";
+import { isAuthenticatedUser, roleBasedAccess } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+router.route("/register").post(registerUser);
+router.route("/login").get(loginUser)
+router.route("/logout").delete(logoutUser);
+
+router.get("/me",isAuthenticatedUser,getUserDetails);
+
+router.post("/password/forgot", forgotPassword);
+router.put("/password/reset/:token", resetPassword);
+
+router.put("/password/update", isAuthenticatedUser, updatePassword);
+
+router.get("/admin/getUser",isAuthenticatedUser,roleBasedAccess("admin"),getUserList);
+
+
+router.route("/admin/getUser/:id").get(isAuthenticatedUser,roleBasedAccess("admin"),getSingleUser)
+.put(isAuthenticatedUser,roleBasedAccess("admin"),updateUserRole)
+.delete(isAuthenticatedUser,roleBasedAccess("admin"),deleteUser);
+
+export default router;
