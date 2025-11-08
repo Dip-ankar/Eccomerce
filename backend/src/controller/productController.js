@@ -16,7 +16,10 @@ export const createProducts = async(req,res)=>{
 
 export const getAllProducts = async (req, res) => {
   try {
-    const { keyword, page = 1, limit = 10, category, priceRange } = req.query;
+    const { keyword, page = 1, limit = 10, category } = req.query;
+
+    const minPrice = req.query.price?.gte;
+    const maxPrice = req.query.price?.lte;
 
     const currentPage = parseInt(page, 10);
     const resultPerPage = parseInt(limit, 8);
@@ -34,14 +37,18 @@ export const getAllProducts = async (req, res) => {
     }
 
     // ✅ Filter by category
-    if (category) query.category = category;
-
-    // ✅ Filter by price range
-    if (priceRange) {
-      const [min, max] = priceRange.split(",").map(Number);
-      query.price = { $gte: min, $lte: max };
+    if (category) {
+      query.category = new RegExp(category.trim(), "i");
     }
 
+    // ✅ Filter by price range (supports ?price[gte]= & price[lte]= )
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    // ✅ Pagination + Count
     const totalProducts = await Product.countDocuments(query);
     const totalPages = Math.ceil(totalProducts / resultPerPage);
 

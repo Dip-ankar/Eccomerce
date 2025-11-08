@@ -1,11 +1,13 @@
 import express from "express";
-import { deleteUser, forgotPassword, getSingleUser, getUserDetails, getUserList, loginUser, logoutUser, registerUser, resetPassword, updatePassword, updateUserRole } from "../controller/userController.js";
+import { deleteUser, forgotPassword, getSingleUser, getUserDetails, getUserList, loginUser, logoutUser, registerUser, resetPassword, updatePassword, updateUserRole, uploadMiddleware } from "../controller/userController.js";
 import { isAuthenticatedUser, roleBasedAccess } from "../middleware/authMiddleware.js";
+
+
 
 const router = express.Router();
 
-router.route("/register").post(registerUser);
-router.route("/login").get(loginUser)
+router.route("/register").post(uploadMiddleware,registerUser);
+router.route("/login").post(loginUser)
 router.route("/logout").delete(logoutUser);
 
 router.get("/me",isAuthenticatedUser,getUserDetails);

@@ -2,52 +2,101 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import validator from "validator";
-import crypto from "crypto";
 
 import { sendEmail } from "../utils/sendEmail.js";
 
-// ✅ REGISTER USER
+import { uploadImage } from "../utils/imagekit.js";
+import multer from "multer";
+
+
+// 🧩 Setup multer to handle multipart/form-data
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+
+// ✅ Export multer middleware for route use
+export const uploadMiddleware = upload.single("avatar");
+
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, avatar } = req.body;
+    const { name, email, password } = req.body;
 
-    // 1️⃣ Validate input
-    if (!name || !email || !password || !avatar) {
-      return res.status(400).json({ message: "All fields are required" });
+    // 🔹 Validate input fields
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
 
-    // 2️⃣ Validate email format
+    // 🔹 Validate email format
     if (!validator.isEmail(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+      });
     }
 
-    // 3️⃣ Check existing user
+     // 🔹 Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    // 🔹 Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this email",
+      });
     }
 
-    // 4️⃣ Hash password
+    // 🔹 Check avatar image
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Avatar image required",
+      });
+    }
+
+    // ✅ Upload image to ImageKit
+    const uploaded = await uploadImage(req.file);
+
+    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5️⃣ Create new user
+    // ✅ Create user
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      avatar,
+      avatar: {
+        public_id: uploaded.fileId,
+        url: uploaded.url,
+      },
     });
 
-    // 8️⃣ Send response
+    // ✅ Hide password before sending response
+    user.password = undefined;
+
     res.status(201).json({
       success: true,
       message: "User registered successfully",
       user,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Register error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
+
 
 // ✅ LOGIN USER
 export const loginUser = async (req, res) => {

@@ -1,12 +1,17 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// ✅ Fetch all products (with pagination + keyword)
 export const getProduct = createAsyncThunk(
   "product/getProduct",
-  async ({ keyword = "", page = 1, limit = 10 }, { rejectWithValue }) => {
+  async ({ keyword = "", page = 1, limit = 10, category = "" }, { rejectWithValue }) => {
     try {
-      const link = `/api/products?keyword=${encodeURIComponent(keyword)}&page=${page}&limit=${limit}`;
+      // Build dynamic query
+      let link = `/api/products?page=${page}&limit=${limit}`;
+
+      if (category) link += `&category=${encodeURIComponent(category)}`;
+      if (keyword) link += `&keyword=${encodeURIComponent(keyword)}`;
+     
+
       const { data } = await axios.get(link);
       return data;
     } catch (error) {
@@ -14,6 +19,7 @@ export const getProduct = createAsyncThunk(
     }
   }
 );
+
 
 // ✅ Fetch single product details by ID
 export const getProductDetails = createAsyncThunk(
