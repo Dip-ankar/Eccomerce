@@ -7,8 +7,10 @@ import {
   ShoppingBag,
 } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-const Navbar = ({ isAuthenticated, user }) => {
+const Navbar = () => {
+  const {isAuthenticated} = useSelector(state=>state.user);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
 
@@ -82,7 +84,7 @@ const Navbar = ({ isAuthenticated, user }) => {
           </Link>
 
           {/* Authentication / Profile */}
-          {!isAuthenticated ? (
+          {!isAuthenticated && 
             <Link
               to="/register"
               className="hover:text-blue-400 transition"
@@ -90,19 +92,7 @@ const Navbar = ({ isAuthenticated, user }) => {
             >
               <PersonAdd fontSize="medium" />
             </Link>
-          ) : (
-            <Link
-              to="/profile"
-              className="flex items-center gap-2 hover:bg-gray-800 px-3 py-1 rounded-full transition"
-            >
-              <img
-                src={user?.avatar?.url || "/images/profile.png"}
-                alt="User"
-                className="w-8 h-8 rounded-full object-cover border border-gray-600"
-              />
-              <span className="hidden md:inline text-sm">{user?.name}</span>
-            </Link>
-          )}
+          }
 
           {/* Mobile Menu Button */}
           <button

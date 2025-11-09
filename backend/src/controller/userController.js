@@ -96,8 +96,6 @@ export const registerUser = async (req, res) => {
   }
 };
 
-
-
 // ✅ LOGIN USER
 export const loginUser = async (req, res) => {
   try {
@@ -152,6 +150,44 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+
+export const updateProfile = async (req, res) => {
+  try {
+    const newUserData = {
+      name: req.body.name,
+      email: req.body.email,
+    };
+
+    // ✅ If a new avatar is uploaded
+    if (req.file) {
+      const uploadResponse = await uploadImage(req.file); // this should return { fileId, url }
+
+      newUserData.avatar = {
+        public_id: uploadResponse.fileId,
+        url: uploadResponse.url,
+      };
+    }
+
+    // ✅ Update user
+    const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    });
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 // ✅ LOGOUT USER
 export const logoutUser = (req, res) => {
@@ -214,19 +250,25 @@ export const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Reset URL
-    const resetUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/v1/password/reset/${resetToken}`;
+    const resetUrl = `${req.protocol}://${req.get("host")}/password/reset/${resetToken}`;
 
-    const message = `You requested a password reset.\n\n
-Click the link below to reset your password:\n\n
-${resetUrl}\n\n
-If you did not request this, please ignore this email.`;
+
+    const message = `
+      <h2>Password Reset Request</h2>
+      <p>Hello ${user.name || "User"},</p>
+      <p>You recently requested to reset your password. Click the button below to reset it:</p>
+      <a href="${resetUrl}" 
+         style="display:inline-block;padding:10px 20px;margin-top:10px;background-color:#4F46E5;color:white;text-decoration:none;border-radius:5px;">
+         Reset Password
+      </a>
+      <p>If you didn’t request this, please ignore this email.</p>
+      <p>Thanks,<br/>FirstShop</p>
+    `;
 
     try {
       await sendEmail({
         email: user.email,
-        subject: "Password Recovery - YourAppName",
+        subject: "Password Reset - FirstShop",
         message,
       });
 
