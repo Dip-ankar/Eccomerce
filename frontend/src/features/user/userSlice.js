@@ -47,13 +47,13 @@ export const loadUser = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk('user/logout',async(_,{rejectWithValue})=>{
-try {
-  const {data} = await axios.post('/api/logout',{withCredentials:true});
-  return data
-} catch (error) {
-  return rejectWithValue(error.response?.data||'Failed to logout')
-}
+export const logout = createAsyncThunk('user/logout', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await axios.post('/api/logout', { withCredentials: true });
+    return data
+  } catch (error) {
+    return rejectWithValue(error.response?.data || 'Failed to logout')
+  }
 })
 
 // ===================== UPDATE PROFILE API =====================
@@ -102,13 +102,16 @@ export const forgotPassword = createAsyncThunk(
 
 export const resetPassword = createAsyncThunk(
   "user/resetPassword",
-  async ({ token, password, confirmPassword }, { rejectWithValue }) => {
+  async ({ token, formData }, { rejectWithValue }) => {
     try {
-      const { data } = await axios.put(`/api/password/reset/${token}`, {
-        password,
-        confirmPassword,
-      });
-      return data.message;
+      const config = {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+      const { data } = await axios.put(`/api/password/reset/${token}`, formData, config);
+
+      return data;
     } catch (error) {
       return rejectWithValue(error.response.data.message);
     }
@@ -174,17 +177,17 @@ const userSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-      //load User
-      builder
+    //load User
+    builder
       .addCase(loadUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(loadUser.fulfilled, (state, action) => {
-  state.loading = false;
-  state.user = action.payload?.user || null;
-  state.isAuthenticated = Boolean(action.payload?.user);
-})
+        state.loading = false;
+        state.user = action.payload?.user || null;
+        state.isAuthenticated = Boolean(action.payload?.user);
+      })
       .addCase(loadUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to user profiler";
@@ -192,40 +195,40 @@ const userSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-      //logout user
-      builder
+    //logout user
+    builder
       .addCase(logout.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(logout.fulfilled, (state, action) => {
-  state.loading = false;
-  state.error= null;
-  state.user = null;
-  state.isAuthenticated = false;
-})
+        state.loading = false;
+        state.error = null;
+        state.user = null;
+        state.isAuthenticated = false;
+      })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to user profiler";
+        state.error = action.payload?.message || "Failed logout";
       });
 
-      // ------------------- UPDATE PROFILE -------------------
-builder
-  .addCase(updateProfile.pending, (state) => {
-    state.loading = true;
-    state.error = null;
-  })
-  .addCase(updateProfile.fulfilled, (state, action) => {
-    state.loading = false;
-    state.user = action.payload?.user || state.user; // update user info
-    state.success = action.payload?.success || true;
-    state.isAuthenticated = true;
-  })
-  .addCase(updateProfile.rejected, (state, action) => {
-    state.loading = false;
-    state.error = action.payload || "Failed to update profile";
-  });
-   builder
+    // ------------------- UPDATE PROFILE -------------------
+    builder
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload?.user || state.user; // update user info
+        state.success = action.payload?.success || true;
+        state.isAuthenticated = true;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to update profile";
+      });
+    builder
       // 👉 UPDATE PASSWORD
       .addCase(updatePassword.pending, (state) => {
         state.loading = true;
@@ -241,33 +244,37 @@ builder
         state.error = action.payload;
       });
 
-      // ------------------- FORGOT PASSWORD -------------------
-builder
-  .addCase(forgotPassword.pending, (state) => {
-    state.loading = true;
-    state.error = null;
-  })
-  .addCase(forgotPassword.fulfilled, (state, action) => {
-    state.loading = false;
-    state.success = action.payload?.success || false;
-  })
-  .addCase(forgotPassword.rejected, (state, action) => {
-    state.loading = false;
-    state.error = action.payload || "Failed to send reset link";
-    state.success = false;
-  });
-
-  builder
-   .addCase(resetPassword.pending, (state) => {
+    // ------------------- FORGOT PASSWORD -------------------
+    builder
+      .addCase(forgotPassword.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(resetPassword.fulfilled, (state) => {
+      .addCase(forgotPassword.fulfilled, (state, action) => {
         state.loading = false;
-        state.success = true;
+        state.success = action.payload?.success || false;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to send reset link";
+        state.success = false;
+      });
+    //reset password
+    builder
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = action.payload?.success;
+        state.error = null;
+        state.user = null;
+        state.isAuthenticated = false
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.message || 'failed reset password';
       });
 
 

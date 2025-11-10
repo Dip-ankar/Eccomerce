@@ -1,7 +1,7 @@
 // src/pages/ForgotPassword.jsx
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { forgotPassword, removeErrors } from "../features/user/userSlice";
+import { forgotPassword, removeErrors, removeSuccess } from "../features/user/userSlice";
 import { toast } from "react-toastify";
 
 const ForgotPassword = () => {
@@ -26,6 +26,7 @@ const ForgotPassword = () => {
 
     if (success) {
       toast.success("Password reset link sent to your email!");
+      dispatch(removeSuccess());
     }
   }, [dispatch, error, success]);
 

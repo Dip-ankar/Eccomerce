@@ -2,6 +2,7 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import validator from "validator";
+import crypto from "crypto";
 
 import { sendEmail } from "../utils/sendEmail.js";
 
@@ -249,8 +250,8 @@ export const forgotPassword = async (req, res) => {
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
-    // Reset URL
-    const resetUrl = `${req.protocol}://${req.get("host")}/password/reset/${resetToken}`;
+     // Create reset URL
+   const resetUrl = `${process.env.FRONTEND_URL}/password/reset/${resetToken}`;
 
 
     const message = `
@@ -330,8 +331,7 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    // Hash new password
-    const bcrypt = await import("bcryptjs");
+
     user.password = await bcrypt.hash(password, 10);
 
     // Clear reset fields

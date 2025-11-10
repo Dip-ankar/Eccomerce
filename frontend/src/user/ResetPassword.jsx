@@ -26,18 +26,9 @@ const ResetPassword = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // ✅ Correct dispatch (token + formData object)
+   dispatch(resetPassword({ token, formData }));
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
-      return;
-    }
-
-    dispatch(resetPassword({ token, ...formData }));
   };
 
   useEffect(() => {
@@ -90,7 +81,11 @@ const ResetPassword = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
+            className={`w-full text-white font-medium py-2 rounded-lg transition ${
+              loading
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>
