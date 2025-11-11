@@ -5,9 +5,17 @@ import Rating from "@mui/material/Rating";
 import PageTitle from "../components/PageTitle";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { getProductDetails, removeErrors } from "../features/products/productSlice";
+import {
+  getProductDetails,
+  removeErrors as removeProductErrors,
+} from "../features/products/productSlice";
 import Loader from "../components/Loader";
 import { toast } from "react-toastify";
+import {
+  addItemsToCart,
+  removeErrors,
+  removeMessage,
+} from "../features/cart/cartSlice";
 
 const ProductDetails = () => {
   const [userRating, setUserRating] = useState(0);
@@ -16,50 +24,78 @@ const ProductDetails = () => {
 
   const dispatch = useDispatch();
   const { id } = useParams();
-  const { loading, error, product } = useSelector((state) => state.product);
 
-  // ✅ Fetch product details
+  // Redux states
+  const { loading, error, product } = useSelector((state) => state.product);
+  const {
+    loading: cartLoading,
+    error: cartError,
+    success,
+    message,
+  } = useSelector((state) => state.cart);
+
+  // ↓ Quantity Handlers
+  const decreaseQuantity = () => {
+    if (quantity <= 1) {
+      toast.error("Quantity cannot be less than 1", { position: "top-center" });
+      return;
+    }
+    setQuantity((qty) => qty - 1);
+  };
+
+  const increaseQuantity = () => {
+    if (product.stock <= quantity) {
+      toast.error("Cannot exceed available stock!", { position: "top-center" });
+      return;
+    }
+    setQuantity((qty) => qty + 1);
+  };
+
+  // ↓ Add to Cart
+  const addToCartHandler = () => {
+    dispatch(addItemsToCart({ id, quantity }));
+  };
+
+  // ↓ Fetch product details
   useEffect(() => {
     if (id) dispatch(getProductDetails(id));
-
     return () => {
-      dispatch(removeErrors());
+      dispatch(removeProductErrors());
     };
   }, [dispatch, id]);
 
-  // ✅ Handle error toast
+  // ↓ Handle error toasts
   useEffect(() => {
     if (error) {
-      toast.error(error.message || "Something went wrong", {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      toast.error(error.message || "Something went wrong");
+      dispatch(removeProductErrors());
+    }
+    if (cartError) {
+      toast.error(cartError);
       dispatch(removeErrors());
     }
-  }, [dispatch, error]);
+  }, [dispatch, error, cartError]);
 
-  // ✅ Rating change handler
-  const handleRatingChange = (event, newValue) => {
-    setUserRating(newValue);
-  };
+  // ↓ Handle success toast
+  useEffect(() => {
+    if (success) {
+      toast.success(message);
+      dispatch(removeMessage());
+    }
+  }, [dispatch, success, message]);
 
-  // ✅ Review submit handler
+  // ↓ Handle review submission
   const handleReviewSubmit = (e) => {
-    e.preventDefault(); // prevent reload
+    e.preventDefault();
     console.log("Rating:", userRating);
     console.log("Comment:", comment);
 
-    // Clear fields
     setUserRating(0);
     setComment("");
-
-    toast.success("Review submitted!", { position: "top-center", autoClose: 3000 });
-
-    // You can dispatch Redux action later:
-    // dispatch(submitReview({ id: product._id, rating: userRating, comment }))
+    toast.success("Review submitted!");
   };
 
-  // ✅ Loading UI
+  // ↓ Loading UI
   if (loading) {
     return (
       <>
@@ -70,7 +106,7 @@ const ProductDetails = () => {
     );
   }
 
-  // ✅ Error / Not Found UI
+  // ↓ Error / Not Found UI
   if (error || !product) {
     return (
       <>
@@ -84,16 +120,16 @@ const ProductDetails = () => {
     );
   }
 
+  // ↓ Main JSX
   return (
     <>
       <PageTitle title={`${product.name} - Details`} />
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-10">
-        {/* Product Section */}
         <div className="flex flex-col md:flex-row gap-10 items-start py-10">
           {/* Product Image */}
-          <div className="w-full md:w-1/2 flex justify-center items-center py-30">
+          <div className="w-full md:w-1/2 flex justify-center items-center">
             <img
               src={product.image && product.image[0]?.url?.replace("./", "/")}
               alt={product.name}
@@ -103,13 +139,16 @@ const ProductDetails = () => {
 
           {/* Product Info */}
           <div className="w-full md:w-1/2">
-            <h2 className="text-3xl font-bold mb-2 text-gray-800">{product.name}</h2>
-            <p className="text-gray-600 mb-3 leading-relaxed">{product.description}</p>
+            <h2 className="text-3xl font-bold mb-2 text-gray-800">
+              {product.name}
+            </h2>
+            <p className="text-gray-600 mb-3 leading-relaxed">
+              {product.description}
+            </p>
             <p className="text-2xl font-semibold text-green-600 mb-4">
               ₹{product.price}
             </p>
 
-            {/* Rating */}
             <div className="flex items-center mb-3">
               <Rating value={product.ratings || 0} precision={0.5} readOnly />
               <span className="ml-2 text-gray-500 text-sm">
@@ -118,7 +157,6 @@ const ProductDetails = () => {
               </span>
             </div>
 
-            {/* Stock */}
             <p
               className={`text-sm mb-4 ${
                 product.stock > 0 ? "text-green-600" : "text-red-500"
@@ -129,13 +167,12 @@ const ProductDetails = () => {
                 : "Out of Stock"}
             </p>
 
-            {/* Quantity + Add to Cart */}
             {product.stock > 0 && (
               <>
                 <div className="flex items-center gap-3 mb-6">
                   <span className="font-medium">Quantity:</span>
                   <button
-                    onClick={() => setQuantity(quantity > 1 ? quantity - 1 : 1)}
+                    onClick={decreaseQuantity}
                     className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
                   >
                     -
@@ -147,15 +184,23 @@ const ProductDetails = () => {
                     className="w-12 text-center border border-gray-300 rounded"
                   />
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={increaseQuantity}
                     className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
                   >
                     +
                   </button>
                 </div>
 
-                <button className="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 transition-all w-full sm:w-auto">
-                  Add to Cart
+                <button
+                  onClick={addToCartHandler}
+                  disabled={cartLoading}
+                  className={`bg-blue-600 text-white px-8 py-2 rounded-lg transition-all w-full sm:w-auto ${
+                    cartLoading
+                      ? "opacity-70 cursor-not-allowed"
+                      : "hover:bg-blue-700"
+                  }`}
+                >
+                  {cartLoading ? "Adding..." : "Add to Cart"}
                 </button>
               </>
             )}
@@ -165,7 +210,7 @@ const ProductDetails = () => {
               <h3 className="text-xl font-semibold mb-3">Write a Review</h3>
               <Rating
                 value={userRating}
-                onChange={handleRatingChange}
+                onChange={(event, newValue) => setUserRating(newValue)}
                 className="mb-3"
               />
               <textarea
@@ -184,7 +229,7 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Reviews Section */}
+        {/* Reviews */}
         <div className="mt-16">
           <h3 className="text-2xl font-bold mb-5 text-gray-800">
             Customer Reviews
