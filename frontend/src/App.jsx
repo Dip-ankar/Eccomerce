@@ -14,6 +14,7 @@ import UpdateProfile from "./user/UpdateProfile";
 import UpdatePassword from "./user/UpdatePassword";
 import ForgotPassword from "./user/ForgotPassword";
 import ResetPassword from "./user/ResetPassword";
+import Cart from "./Cart/Cart";
 
 const App = () => {
  const dispatch = useDispatch();
@@ -37,6 +38,7 @@ const App = () => {
         <Route path="/password/update" element={<ProtectedRoute element={<UpdatePassword />}/>}/>
          <Route path="/password/forgot" element={<ForgotPassword/>} />
          <Route path="/password/reset/:token" element={<ResetPassword/>} />
+         <Route path="/cart" element={<Cart/>} />
       </Routes>
 
       {isAuthenticated && <UserDashboard user={user} />}

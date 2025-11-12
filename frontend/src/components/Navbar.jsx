@@ -11,6 +11,7 @@ import { useSelector } from "react-redux";
 
 const Navbar = () => {
   const {isAuthenticated} = useSelector(state=>state.user);
+   const {cartItems} = useSelector(state=>state.cart);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
 
@@ -79,7 +80,7 @@ const Navbar = () => {
           >
             <ShoppingBag fontSize="medium" />
             <span className="absolute -top-2 -right-2 bg-blue-500 text-xs rounded-full px-1.5">
-              0
+              {cartItems.length}
             </span>
           </Link>
 

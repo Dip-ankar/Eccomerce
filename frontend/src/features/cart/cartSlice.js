@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// ✅ Add Item to Cart (with localStorage sync)
+// ✅ Async Thunk: Add Item to Cart (fetches product from backend)
 export const addItemsToCart = createAsyncThunk(
   "cart/addItemsToCart",
   async ({ id, quantity }, { rejectWithValue }) => {
@@ -21,12 +21,12 @@ export const addItemsToCart = createAsyncThunk(
         quantity,
       };
     } catch (error) {
-      return rejectWithValue(error.message || "An Error Occurred");
+      return rejectWithValue(error.message || "An error occurred while adding to cart");
     }
   }
 );
 
-// ✅ Load initial cart items from localStorage
+// ✅ Load cart items from localStorage
 const storedCartItems = localStorage.getItem("cartItems")
   ? JSON.parse(localStorage.getItem("cartItems"))
   : [];
@@ -59,6 +59,14 @@ const cartSlice = createSlice({
       localStorage.removeItem("cartItems");
       state.message = "Cart cleared!";
     },
+    updateQuantity: (state, action) => {
+      const { id, quantity } = action.payload;
+      const item = state.cartItems.find((i) => i.product === id);
+      if (item) {
+        item.quantity = quantity;
+        localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -76,21 +84,18 @@ const cartSlice = createSlice({
         );
 
         if (existingItem) {
-          // Update quantity if item already exists
           existingItem.quantity = item.quantity;
         } else {
           state.cartItems.push(item);
         }
 
-        // ✅ Save updated cart to localStorage
         localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
-
         state.success = true;
         state.message = `${item.name} added to cart successfully!`;
       })
       .addCase(addItemsToCart.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "An Error Occurred";
+        state.error = action.payload || "Failed to add item to cart";
         state.success = false;
       });
   },
@@ -101,6 +106,7 @@ export const {
   removeMessage,
   removeCartItem,
   clearCart,
+  updateQuantity,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
