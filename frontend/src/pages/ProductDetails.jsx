@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import Rating from "@mui/material/Rating";
 import PageTitle from "../components/PageTitle";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   getProductDetails,
   removeErrors as removeProductErrors,
@@ -23,6 +23,7 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { id } = useParams();
 
   // Redux states
@@ -33,6 +34,7 @@ const ProductDetails = () => {
     success,
     message,
   } = useSelector((state) => state.cart);
+  const { user } = useSelector((state) => state.user); // 👈 get logged-in user
 
   // ↓ Quantity Handlers
   const decreaseQuantity = () => {
@@ -53,6 +55,13 @@ const ProductDetails = () => {
 
   // ↓ Add to Cart
   const addToCartHandler = () => {
+    if (!user) {
+      toast.info("Please login to add items to your cart!", {
+        position: "top-center",
+      });
+      navigate("/login");
+      return;
+    }
     dispatch(addItemsToCart({ id, quantity }));
   };
 

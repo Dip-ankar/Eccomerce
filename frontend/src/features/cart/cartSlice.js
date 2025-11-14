@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// ✅ Async Thunk: Add Item to Cart (fetches product from backend)
+// ✅ Async Thunk: Fetch product details and add to cart
 export const addItemsToCart = createAsyncThunk(
   "cart/addItemsToCart",
-  async ({ id, quantity }, { rejectWithValue }) => {
+  async ({ id, quantity, userId }, { rejectWithValue }) => {
     try {
       const response = await fetch(`/api/product/${id}`);
       const data = await response.json();
@@ -16,58 +16,95 @@ export const addItemsToCart = createAsyncThunk(
         product: data.product._id,
         name: data.product.name,
         price: data.product.price,
-        image: data.product.image[0].url,
+        image: data.product.image?.[0]?.url || "",
         stock: data.product.stock,
         quantity,
+        userId,
       };
     } catch (error) {
-      return rejectWithValue(error.message || "An error occurred while adding to cart");
+      return rejectWithValue(error.message || "Error adding product to cart");
     }
   }
 );
 
-// ✅ Load cart items from localStorage
-const storedCartItems = localStorage.getItem("cartItems")
-  ? JSON.parse(localStorage.getItem("cartItems"))
-  : [];
+// ✅ Helper: Load cart items for a specific user
+const getCartItems = (userId) => {
+  if (!userId) return [];
+  const saved = localStorage.getItem(`cartItems_${userId}`);
+  return saved ? JSON.parse(saved) : [];
+};
+
+// ✅ Helper: Load shipping info (if exists)
+const getShippingInfo = () => {
+  const saved = localStorage.getItem("shippingInfo");
+  return saved ? JSON.parse(saved) : {};
+};
 
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
-    cartItems: storedCartItems,
+    cartItems: [],
     loading: false,
     error: null,
     success: false,
     message: null,
+    shippingInfo: getShippingInfo(),
   },
+
   reducers: {
+    // ✅ Load user's cart (called when login)
+    loadCartForUser: (state, action) => {
+      const userId = action.payload;
+      state.cartItems = getCartItems(userId);
+    },
+
+    // ✅ Remove item
+    removeCartItem: (state, action) => {
+      const { id, userId } = action.payload;
+      state.cartItems = state.cartItems.filter((i) => i.product !== id);
+      localStorage.setItem(
+        `cartItems_${userId}`,
+        JSON.stringify(state.cartItems)
+      );
+      state.message = "Item removed from cart!";
+    },
+
+    // ✅ Clear cart
+    clearCart: (state, action) => {
+      const userId = action.payload;
+      state.cartItems = [];
+      localStorage.removeItem(`cartItems_${userId}`);
+      state.message = "Cart cleared!";
+    },
+
+    // ✅ Update quantity
+    updateQuantity: (state, action) => {
+      const { id, quantity, userId } = action.payload;
+      const item = state.cartItems.find((i) => i.product === id);
+      if (item) {
+        item.quantity = quantity;
+        localStorage.setItem(
+          `cartItems_${userId}`,
+          JSON.stringify(state.cartItems)
+        );
+      }
+    },
+
+    // ✅ Save shipping info
+    saveShippingInfo: (state, action) => {
+      state.shippingInfo = action.payload;
+      localStorage.setItem("shippingInfo", JSON.stringify(action.payload));
+    },
+
+    // ✅ Reset error & message
     removeErrors: (state) => {
       state.error = null;
     },
     removeMessage: (state) => {
       state.message = null;
     },
-    removeCartItem: (state, action) => {
-      state.cartItems = state.cartItems.filter(
-        (item) => item.product !== action.payload
-      );
-      localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
-      state.message = "Item removed from cart!";
-    },
-    clearCart: (state) => {
-      state.cartItems = [];
-      localStorage.removeItem("cartItems");
-      state.message = "Cart cleared!";
-    },
-    updateQuantity: (state, action) => {
-      const { id, quantity } = action.payload;
-      const item = state.cartItems.find((i) => i.product === id);
-      if (item) {
-        item.quantity = quantity;
-        localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
-      }
-    },
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(addItemsToCart.pending, (state) => {
@@ -79,34 +116,39 @@ const cartSlice = createSlice({
         const item = action.payload;
         state.loading = false;
 
-        const existingItem = state.cartItems.find(
+        const existing = state.cartItems.find(
           (i) => i.product === item.product
         );
 
-        if (existingItem) {
-          existingItem.quantity = item.quantity;
+        if (existing) {
+          existing.quantity = item.quantity;
         } else {
           state.cartItems.push(item);
         }
 
-        localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
+        localStorage.setItem(
+          `cartItems_${item.userId}`,
+          JSON.stringify(state.cartItems)
+        );
+
         state.success = true;
         state.message = `${item.name} added to cart successfully!`;
       })
       .addCase(addItemsToCart.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to add item to cart";
-        state.success = false;
+        state.error = action.payload || "Failed to add to cart";
       });
   },
 });
 
 export const {
-  removeErrors,
-  removeMessage,
+  loadCartForUser,
   removeCartItem,
   clearCart,
   updateQuantity,
+  removeErrors,
+  removeMessage,
+  saveShippingInfo,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

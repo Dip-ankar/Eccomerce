@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { login, removeErrors, removeSuccess } from "../features/user/userSlice";
 
@@ -8,6 +8,8 @@ const Login = () => {
   const [user, setUser] = useState({ email: "", password: "" });
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
+  const redirect=new URLSearchParams(location.search).get("redirect")||"/";
 
   const { error, loading, success, isAuthenticated } = useSelector(
     (state) => state.user
@@ -39,8 +41,8 @@ const Login = () => {
   // ✅ Handle success & redirect
   useEffect(() => {
     if (isAuthenticated) {
-      toast.success("Login successful 🎉", { position: "top-center", autoClose: 2000 });
-      navigate("/"); // redirect to home/dashboard
+      toast.success("Login successful ", { position: "top-center", autoClose: 2000 ,toastId:""});
+      navigate(redirect); // redirect to home/dashboard
       dispatch(removeSuccess());
     }
   }, [dispatch, isAuthenticated, navigate]);
