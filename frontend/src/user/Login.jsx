@@ -6,46 +6,69 @@ import { login, removeErrors, removeSuccess } from "../features/user/userSlice";
 
 const Login = () => {
   const [user, setUser] = useState({ email: "", password: "" });
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
-  const redirect=new URLSearchParams(location.search).get("redirect")||"/";
+
+  const redirect = new URLSearchParams(location.search).get("redirect") || "/";
 
   const { error, loading, success, isAuthenticated } = useSelector(
     (state) => state.user
   );
 
-  // ✅ Handle input change
+  // ------------------------------
+  // Handle Input
+  // ------------------------------
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
   };
 
-  // ✅ Handle form submit
+  // ------------------------------
+  // Submit Login
+  // ------------------------------
   const handleSubmit = (e) => {
     e.preventDefault();
+
     if (!user.email || !user.password) {
       toast.error("Please fill all fields");
       return;
     }
+
     dispatch(login({ email: user.email, password: user.password }));
   };
 
-  // ✅ Handle errors
+  // ------------------------------
+  // Show Error Toast
+  // ------------------------------
   useEffect(() => {
     if (error) {
-      toast.error(error, { position: "top-center", autoClose: 3000 });
+      toast.error(error, {
+        position: "top-center",
+        autoClose: 2500,
+        toastId: "login_error",
+      });
       dispatch(removeErrors());
     }
-  }, [dispatch, error]);
+  }, [error, dispatch]);
 
-  // ✅ Handle success & redirect
+  // ------------------------------
+  // SUCCESS LOGIN TOAST + REDIRECT
+  // ------------------------------
   useEffect(() => {
-    if (isAuthenticated) {
-      toast.success("Login successful ", { position: "top-center", autoClose: 2000 ,toastId:""});
-      navigate(redirect); // redirect to home/dashboard
+    if (success && isAuthenticated) {
+      toast.success("Login successful!", {
+        position: "top-center",
+        autoClose: 2000,
+        toastId: "login_success", // 👉 shows only once
+      });
+
       dispatch(removeSuccess());
+
+      // redirect only once
+      navigate(redirect);
     }
-  }, [dispatch, isAuthenticated, navigate]);
+  }, [success, isAuthenticated, dispatch, navigate, redirect]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500">
