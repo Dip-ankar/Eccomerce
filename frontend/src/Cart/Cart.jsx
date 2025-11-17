@@ -88,9 +88,15 @@ const Cart = () => {
     });
   };
 
-  const handleUpdate = (id, quantity) => {
-    dispatch(addItemsToCart({ id, quantity, userId: user._id }));
-  };
+const handleUpdate = (id, quantity) => {
+  if (!user?._id) {
+    toast.error("User not loaded yet!");
+    return;
+  }
+
+  dispatch(addItemsToCart({ id, quantity, userId: user._id }));
+};
+
 
   const handleRemove = (id) => {
     dispatch(removeCartItem({ id, userId: user._id }));

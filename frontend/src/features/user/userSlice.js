@@ -124,11 +124,12 @@ export const resetPassword = createAsyncThunk(
 const userSlice = createSlice({
   name: "user",
   initialState: {
-    user: null,
+    user: localStorage.getItem('user')?JSON.parse(localStorage.getItem('user')):null,
     loading: false,
     error: null,
     success: false,
-    isAuthenticated: false,
+    isAuthenticated: localStorage.getItem('isAuthenticated')==='true',
+    message:null
   },
   reducers: {
     removeErrors: (state) => {
@@ -148,8 +149,11 @@ const userSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload?.user || null;
-        state.success = action.payload?.success || false;
+        state.success = action.payload.success;
         state.isAuthenticated = Boolean(action.payload?.user);
+
+        localStorage.setItem('user',JSON.stringify(state.user));
+        localStorage.setItem('isAuthenticated',JSON.stringify(state.isAuthenticated));
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -169,6 +173,9 @@ const userSlice = createSlice({
         state.user = action.payload?.user || null;
         state.success = action.payload?.success || false;
         state.isAuthenticated = Boolean(action.payload?.user);
+
+        localStorage.setItem('user',JSON.stringify(state.user));
+        localStorage.setItem('isAuthenticated',JSON.stringify(state.isAuthenticated));
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -187,12 +194,23 @@ const userSlice = createSlice({
         state.loading = false;
         state.user = action.payload?.user || null;
         state.isAuthenticated = Boolean(action.payload?.user);
+
+        localStorage.setItem('user',JSON.stringify(state.user));
+        localStorage.setItem('isAuthenticated',JSON.stringify(state.isAuthenticated));
       })
       .addCase(loadUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to user profiler";
         state.success = false;
+        state.user=null;
         state.isAuthenticated = false;
+
+         if(action.payload?.statusCode===401){
+          state.user=null;
+          state.isAuthenticated=false;
+          localStorage.removeItem('user')
+          localStorage.removeItem('isAuthenticated')
+        }
       });
 
     //logout user
@@ -206,10 +224,13 @@ const userSlice = createSlice({
         state.error = null;
         state.user = null;
         state.isAuthenticated = false;
+         localStorage.removeItem('user')
+          localStorage.removeItem('isAuthenticated')
       })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || "Failed logout";
+
       });
 
     // ------------------- UPDATE PROFILE -------------------

@@ -43,7 +43,7 @@ const getShippingInfo = () => {
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
-    cartItems: [],
+    cartItems:[],
     loading: false,
     error: null,
     success: false,

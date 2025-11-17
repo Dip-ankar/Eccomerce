@@ -52,18 +52,14 @@ const ProductDetails = () => {
     }
     setQuantity((qty) => qty + 1);
   };
-
+  
+  const userId = user?._id;
   // ↓ Add to Cart
   const addToCartHandler = () => {
-    if (!user) {
-      toast.info("Please login to add items to your cart!", {
-        position: "top-center",
-      });
-      navigate("/login");
-      return;
-    }
-    dispatch(addItemsToCart({ id, quantity }));
+  
+    dispatch(addItemsToCart({ id, quantity,userId }));
   };
+
 
   // ↓ Fetch product details
   useEffect(() => {
