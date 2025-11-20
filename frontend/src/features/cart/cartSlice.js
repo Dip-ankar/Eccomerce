@@ -74,7 +74,7 @@ const cartSlice = createSlice({
       const userId = action.payload;
       state.cartItems = [];
       localStorage.removeItem(`cartItems_${userId}`);
-      state.message = "Cart cleared!";
+      localStorage.removeItem('shippingInfo')
     },
 
     // ✅ Update quantity

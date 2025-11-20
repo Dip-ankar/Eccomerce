@@ -12,7 +12,8 @@ const Payment = () => {
   const orderItem = JSON.parse(sessionStorage.getItem("orderItem"));
   const { cartItems, shippingInfo } = useSelector((state) => state.cart);
 
-  // ❗ Redirect if user refreshes and required data is missing
+  const {user} = useSelector((state)=>state.user)
+  // Redirect if data missing on refresh
   useEffect(() => {
     if (!orderItem || !cartItems?.length || !shippingInfo) {
       navigate("/order/confirm");
@@ -23,6 +24,75 @@ const Payment = () => {
 
   const { subtotal, shipping, tax, total } = orderItem;
 
+  // 🔥 Razorpay Payment Handler
+const handlePayment = async () => {
+  try {
+    // 1️⃣ Get Razorpay API key
+    const keyRes = await fetch("/api/payment/razorpay-key");
+    const { key } = await keyRes.json();
+
+    // 2️⃣ Create order on backend
+    const orderRes = await fetch("/api/payment/process", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ amount: total }),
+    });
+
+    const { order } = await orderRes.json();
+
+    // 3️⃣ Razorpay Options
+    const options = {
+      key,
+      amount: order.amount,
+      currency: "INR",
+      name: "FirstShop",
+      description: "Eccommerce Website Payment Transaction",
+      order_id: order.id,
+      prefill: {
+        name: user.name,
+        email: user.email,
+        contact: shippingInfo.phoneNo,
+      },
+
+      // 💥 PAYMENTS SUCCESS HANDLER (CALLS BACKEND VERIFY)
+      handler: async function (response) {
+        const verifyRes = await fetch("/api/payment/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
+          }),
+        });
+
+        const verification = await verifyRes.json();
+
+        if (verification.success) {
+          navigate("/order/success");
+        } else {
+          alert("Payment Verification Failed ❌");
+        }
+      },
+
+      theme: {
+        color: "#2563eb",
+      },
+    };
+
+    const razor = new window.Razorpay(options);
+    razor.open();
+  } catch (error) {
+    console.error("Payment Error:", error);
+    alert("Payment failed, try again.");
+  }
+};
+
+
   return (
     <>
       <PageTitle title="Payment Processing" />
@@ -31,7 +101,7 @@ const Payment = () => {
 
       {/* Main Container */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
+        
         {/* Back Button */}
         <Link
           to="/order/confirm"
@@ -71,9 +141,9 @@ const Payment = () => {
             </div>
           </div>
 
-          {/* Payment Button */}
+          {/* Pay Button */}
           <button
-            onClick={() => navigate("/order/success")}
+            onClick={handlePayment}
             className="
               w-full 
               bg-blue-600 
@@ -91,9 +161,8 @@ const Payment = () => {
             Pay ₹{total.toFixed(2)}
           </button>
 
-          {/* Note */}
           <p className="mt-3 text-xs text-gray-500 text-center">
-            You will be redirected to the order success page.
+            Secure payment powered by Razorpay.
           </p>
         </div>
       </div>

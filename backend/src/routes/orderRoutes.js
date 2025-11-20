@@ -7,6 +7,8 @@ const router = express.Router();
 
 router.route('/new/order').post(isAuthenticatedUser,createNewOrder);
 
+router.route('/order/:id').get(isAuthenticatedUser,getSingleOrder)
+
 router.route('/admin/order/:id').get(isAuthenticatedUser,roleBasedAccess("admin"),getSingleOrder)
 .put(isAuthenticatedUser,roleBasedAccess("admin"),updateOrderStatus)
 .delete(isAuthenticatedUser,roleBasedAccess("admin"),deleteOrder);

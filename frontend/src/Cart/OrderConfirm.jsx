@@ -61,11 +61,11 @@ const OrderConfirm = () => {
           <tbody>
             <tr className="text-center">
               <td className="p-2">{user?.name}</td>
-              <td className="p-2">{shippingInfo?.phoneNumber}</td>
+              <td className="p-2">{shippingInfo?.phoneNo}</td>
               <td className="p-2">
                 {shippingInfo?.address}, {shippingInfo?.city},
                 {shippingInfo?.state}, {shippingInfo?.country} -
-                {shippingInfo?.pincode}
+                {shippingInfo?.pinCode}
               </td>
             </tr>
           </tbody>

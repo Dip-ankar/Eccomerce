@@ -134,7 +134,7 @@ const ProductDetails = () => {
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex flex-col md:flex-row gap-10 items-start py-10">
           {/* Product Image */}
-          <div className="w-full md:w-1/2 flex justify-center items-center">
+          <div className="w-full md:w-1/2 flex justify-center items-center py-20">
             <img
               src={product.image && product.image[0]?.url?.replace("./", "/")}
               alt={product.name}
