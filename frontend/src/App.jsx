@@ -22,6 +22,7 @@ import Payment from "./Cart/Payment";
 import PaymentSuccess from "./Cart/PaymentSuccess";
 import MyOrders from "./order/MyOrders";
 import OrderDetails from "./order/OrderDetails";
+import Dashboard from "./Admin/Dashboard";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -97,6 +98,11 @@ const App = () => {
         <Route
           path="/order/:id"
           element={<ProtectedRoute element={<OrderDetails />} />}
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={<ProtectedRoute element={<Dashboard />} adminOnly={true}/>}
         />
       </Routes>
 

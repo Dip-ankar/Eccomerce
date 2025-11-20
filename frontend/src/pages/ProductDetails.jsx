@@ -4,10 +4,12 @@ import Footer from "../components/Footer";
 import Rating from "@mui/material/Rating";
 import PageTitle from "../components/PageTitle";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   getProductDetails,
   removeErrors as removeProductErrors,
+  removeSuccess,
+  createReview,
 } from "../features/products/productSlice";
 import Loader from "../components/Loader";
 import { toast } from "react-toastify";
@@ -23,23 +25,33 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
 
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { id } = useParams();
 
   // Redux states
-  const { loading, error, product } = useSelector((state) => state.product);
+  const {
+    loading,
+    error,
+    product,
+    reviewSuccess,
+    reviewLoading,
+  } = useSelector((state) => state.product);
+
   const {
     loading: cartLoading,
     error: cartError,
     success,
     message,
   } = useSelector((state) => state.cart);
-  const { user } = useSelector((state) => state.user); // 👈 get logged-in user
 
-  // ↓ Quantity Handlers
+  const { user } = useSelector((state) => state.user);
+  const userId = user?._id;
+
+  // ---------------------------
+  // Quantity Handlers
+  // ---------------------------
   const decreaseQuantity = () => {
     if (quantity <= 1) {
-      toast.error("Quantity cannot be less than 1", { position: "top-center" });
+      toast.error("Quantity cannot be less than 1");
       return;
     }
     setQuantity((qty) => qty - 1);
@@ -47,60 +59,88 @@ const ProductDetails = () => {
 
   const increaseQuantity = () => {
     if (product.stock <= quantity) {
-      toast.error("Cannot exceed available stock!", { position: "top-center" });
+      toast.error("Cannot exceed available stock!");
       return;
     }
     setQuantity((qty) => qty + 1);
   };
-  
-  const userId = user?._id;
-  // ↓ Add to Cart
+
+  // ---------------------------
+  // Add to Cart
+  // ---------------------------
   const addToCartHandler = () => {
-  
-    dispatch(addItemsToCart({ id, quantity,userId }));
+    dispatch(addItemsToCart({ id, quantity, userId }));
   };
 
-
-  // ↓ Fetch product details
+  // ---------------------------
+  // Fetch product details
+  // ---------------------------
   useEffect(() => {
     if (id) dispatch(getProductDetails(id));
-    return () => {
-      dispatch(removeProductErrors());
-    };
+    return () => dispatch(removeProductErrors());
   }, [dispatch, id]);
 
-  // ↓ Handle error toasts
+  // ---------------------------
+  // Error Toasts
+  // ---------------------------
   useEffect(() => {
     if (error) {
-      toast.error(error.message || "Something went wrong");
+      toast.error(error.message || error);
       dispatch(removeProductErrors());
     }
     if (cartError) {
       toast.error(cartError);
       dispatch(removeErrors());
     }
-  }, [dispatch, error, cartError]);
+  }, [error, cartError, dispatch]);
 
-  // ↓ Handle success toast
+  // ---------------------------
+  // Cart Success
+  // ---------------------------
   useEffect(() => {
     if (success) {
       toast.success(message);
       dispatch(removeMessage());
     }
-  }, [dispatch, success, message]);
+  }, [success, message, dispatch]);
 
-  // ↓ Handle review submission
+  // ---------------------------
+  // Review Submit
+  // ---------------------------
   const handleReviewSubmit = (e) => {
     e.preventDefault();
-    console.log("Rating:", userRating);
-    console.log("Comment:", comment);
+    if (!userRating) {
+      toast.error("Please select a rating");
+      return;
+    }
 
-    setUserRating(0);
-    setComment("");
-    toast.success("Review submitted!");
+    dispatch(
+      createReview({
+        rating: userRating,
+        comment,
+        productId: id,
+      })
+    );
   };
 
-  // ↓ Loading UI
+  // ---------------------------
+  // After Review Success
+  // ---------------------------
+  useEffect(() => {
+    if (reviewSuccess) {
+      toast.success("Review Submitted Successfully",{position:'top-center',autoClose:2500});
+
+      setUserRating(0);
+      setComment("");
+
+      dispatch(removeSuccess());
+      dispatch(getProductDetails(id));
+    }
+  }, [reviewSuccess, id, dispatch]);
+
+  // ---------------------------
+  // Loading Screen
+  // ---------------------------
   if (loading) {
     return (
       <>
@@ -111,7 +151,9 @@ const ProductDetails = () => {
     );
   }
 
-  // ↓ Error / Not Found UI
+  // ---------------------------
+  // Error OR No Product
+  // ---------------------------
   if (error || !product) {
     return (
       <>
@@ -125,7 +167,9 @@ const ProductDetails = () => {
     );
   }
 
-  // ↓ Main JSX
+  // ---------------------------
+  // MAIN UI
+  // ---------------------------
   return (
     <>
       <PageTitle title={`${product.name} - Details`} />
@@ -150,6 +194,7 @@ const ProductDetails = () => {
             <p className="text-gray-600 mb-3 leading-relaxed">
               {product.description}
             </p>
+
             <p className="text-2xl font-semibold text-green-600 mb-4">
               ₹{product.price}
             </p>
@@ -172,13 +217,14 @@ const ProductDetails = () => {
                 : "Out of Stock"}
             </p>
 
+            {/* Quantity + Add to Cart */}
             {product.stock > 0 && (
               <>
                 <div className="flex items-center gap-3 mb-6">
                   <span className="font-medium">Quantity:</span>
                   <button
                     onClick={decreaseQuantity}
-                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
                   >
                     -
                   </button>
@@ -190,7 +236,7 @@ const ProductDetails = () => {
                   />
                   <button
                     onClick={increaseQuantity}
-                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
                   >
                     +
                   </button>
@@ -199,10 +245,8 @@ const ProductDetails = () => {
                 <button
                   onClick={addToCartHandler}
                   disabled={cartLoading}
-                  className={`bg-blue-600 text-white px-8 py-2 rounded-lg transition-all w-full sm:w-auto ${
-                    cartLoading
-                      ? "opacity-70 cursor-not-allowed"
-                      : "hover:bg-blue-700"
+                  className={`bg-blue-600 text-white px-8 py-2 rounded-lg w-full sm:w-auto ${
+                    cartLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"
                   }`}
                 >
                   {cartLoading ? "Adding..." : "Add to Cart"}
@@ -218,17 +262,20 @@ const ProductDetails = () => {
                 onChange={(event, newValue) => setUserRating(newValue)}
                 className="mb-3"
               />
+
               <textarea
                 placeholder="Write your review here..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="w-full h-24 border border-gray-300 rounded-lg p-2 mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full h-24 border border-gray-300 rounded-lg p-2 mb-3 resize-none"
               ></textarea>
+
               <button
                 type="submit"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-all"
+                disabled={reviewLoading}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
               >
-                Submit Review
+                {reviewLoading ? "Submitting..." : "Submit Review"}
               </button>
             </form>
           </div>
@@ -239,12 +286,13 @@ const ProductDetails = () => {
           <h3 className="text-2xl font-bold mb-5 text-gray-800">
             Customer Reviews
           </h3>
+
           {product.reviews && product.reviews.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {product.reviews.map((review, index) => (
                 <div
                   key={index}
-                  className="border rounded-xl p-5 shadow-sm bg-white hover:shadow-md transition"
+                  className="border rounded-xl p-5 shadow-sm bg-white hover:shadow-md"
                 >
                   <Rating value={review.rating} readOnly size="small" />
                   <p className="text-gray-700 mt-2">{review.comment}</p>
