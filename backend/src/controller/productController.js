@@ -1,18 +1,63 @@
-import Product from '../models/productModel.js';
-// import HandleError from '../utils/handleError.js';
+import Product from "../models/productModel.js";
+import { uploadImage } from "../utils/imagekit.js";
 
-//ceating all Products
+import multer from "multer";
 
-export const createProducts = async(req,res)=>{
+const storage = multer.memoryStorage();
 
-   req.body.user= req.user.id;
-    const product = await Product.create(req.body)
+export const uploadProductImages = multer({ storage }).array("images", 10);
+
+
+export const createProducts = async (req, res) => {
+  try {
+    const { name, description, price, category, stock } = req.body;
+
+    if (!name || !description || !price || !category || !stock) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Product images are required" });
+    }
+
+    // Upload all images
+    let imagesArray = [];
+
+    for (const file of req.files) {
+      const uploaded = await uploadImage(file, "Ecommerce/products");
+
+      imagesArray.push({
+        public_id: uploaded.fileId,
+        url: uploaded.url,
+      });
+    }
+
+    const product = await Product.create({
+      name,
+      description,
+      price,
+      category,
+      stock,
+      image: imagesArray,
+      user: req.user.id, // from auth middleware
+    });
+
     res.status(201).json({
-        success:true,
-        product
+      success: true,
+      message: "Product created successfully",
+      product,
+    });
+  } catch (error) {
+    console.error("Product Create Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    })
-}
+
 
 export const getAllProducts = async (req, res) => {
   try {

@@ -37,12 +37,12 @@ const Dashboard = () => {
     },
     {
       title: "All Products",
-      value: "all-products",
+      value: "products",
       icon: <ShoppingBag size={20} />,
     },
     {
       title: "Create Product",
-      value: "create-product",
+      value: "product/create",
       icon: <PlusCircle size={20} />,
     },
     { title: "All Users", value: "all-users", icon: <Users size={20} /> },
@@ -63,11 +63,11 @@ const Dashboard = () => {
       <Navbar />
       <PageTitle title="Admin Dashboard" />
 
-      <div className="flex min-h-screen bg-gray-100 pt-20">
+      <div className="flex bg-gray-100 py-15">
         {/* SIDEBAR */}
         <aside
           className={`bg-white shadow-md fixed md:sticky top-20 md:top-20
- left-0 h-[calc(100vh-80px)]
+ left-1
           transition-all duration-300 overflow-hidden
           ${open ? "w-60" : "w-0 md:w-60"}`}
         >

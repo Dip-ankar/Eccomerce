@@ -23,6 +23,8 @@ import PaymentSuccess from "./Cart/PaymentSuccess";
 import MyOrders from "./order/MyOrders";
 import OrderDetails from "./order/OrderDetails";
 import Dashboard from "./Admin/Dashboard";
+import ProductList from "./Admin/ProductList";
+import CreateProduct from "./Admin/CreateProduct";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -103,6 +105,15 @@ const App = () => {
         <Route
           path="/admin/dashboard"
           element={<ProtectedRoute element={<Dashboard />} adminOnly={true}/>}
+        />
+        <Route
+          path="/admin/products"
+          element={<ProtectedRoute element={<ProductList />} adminOnly={true}/>}
+        />
+
+        <Route
+          path="/admin/product/create"
+          element={<ProtectedRoute element={<CreateProduct />} adminOnly={true}/>}
         />
       </Routes>
 
